@@ -1,0 +1,7 @@
+checkpoints/
+models/
+dataset/
+minigpt4/output/
+minigpt4/datasets/
+*/__pycache__/
+*/*/__pycache__/

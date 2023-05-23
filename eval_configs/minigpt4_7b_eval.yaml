@@ -8,7 +8,9 @@ model:
   low_resource: True
   prompt_path: "prompts/alignment.txt"
   prompt_template: '###Human: {} ###Assistant: '
-  ckpt: '/path/to/pretrained/ckpt/'
+  #ckpt: './checkpoints/prerained_minigpt4_7b.pth'  
+  ckpt: './minigpt4/output/minigpt4_7b_stage2_finetune/20230521113/checkpoint_4.pth'
+  llama_model: './models/vicuna-7b-v1.1-decapoda-research/'  
 
 
 datasets:

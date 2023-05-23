@@ -1,0 +1,72 @@
+Refer to: https://github.com/Vision-CAIR/MiniGPT-4
+
+To run in docker:
+docker run -v /home/eyaweiw/github:/tf -v /mnt/ce5dedab-8d77-4639-83ef-c965ed4842e3:/data --gpus all -it eyaweiw.cn:5000/minigpt4:1.0.1-2023-05-20
+
+Note: eyaweiw.cn:5000/minigpt4:1.0.0-2023-05-20 is based on eyaweiw.cn:5000/mmdeploy:allInOne-App-2023-05-06
+
+conda activate minigpt4
+
+==========================================13b======================================
+1. build the Vicuna Weights: refer to https://github.com/lm-sys/FastChat#vicuna-weights
+
+Modify file ./minigpt4/models/mini_gpt4.py to set "pretrain_vicuna": "configs/models/minigpt4_13b.yaml"
+
+cd /tf/MiniGPT-4/models
+python apply_delta.py --base ./llama-13b-hf/llama-13b-hf_decapoda-research/ --target ./vicuna-13b-v1.1-decapoda-research/ --delta ./vicuna-13b-delta-v1.1/
+
+Not use this:
+python apply_delta.py --base ./llama-13b-hf/llama-13b-hf-yahma --target ./vicuna-13b-v1.1-yahma --delta ./vicuna-13b-delta-v1.1/
+
+
+2. demo
+python demo.py --cfg-path eval_configs/minigpt4_7b_eval.yaml  --gpu-id 0
+To access http://127.0.0.1:7860
+
+3. pre-train stage1:
+Due to big dataset (~3T) and unknow command img2dataset in sh scripts, does not run it
+
+4. pre-train stage2:
+torchrun --nproc_per_node 2 train.py --cfg-path train_configs/minigpt4_13b_stage2_finetune.yaml
+
+Result: OutOfMemoryError!!! (2 rtx3090)
+vi train_configs/minigpt4_13b_stage2_finetune.yaml
+        batch_size_train: 1  #orig is 12, event I set to 1, it is still oom
+        batch_size_eval: 1   #orig is 12
+
+
+===============also try below in 13b to check the OOM (not verify yet)===========
+vi minigpt4/models/mini_gpt4.py
+vit_precision="fp16" change to "int8"
+low_resource=False change to True
+
+==============================================7b=============================================
+
+Then turn to llama-7b instead of llama-13b:
+
+Modify file ./minigpt4/models/mini_gpt4.py to set "pretrain_vicuna": "configs/models/minigpt4_7b.yaml"
+
+1. python apply_delta.py --base ./llama-7b-hf/ --target ./vicuna-7b-v1.1-decapoda-research/ --delta ./vicuna-7b-delta-v1.1/
+
+2. demo
+cd /tf/MiniGPT-4/
+python demo.py --cfg-path eval_configs/minigpt4_7b_eval.yaml --gpu-id 0
+To access http://127.0.0.1:7860
+
+3. pre-train stage1:
+Due to big dataset (~3T) and unknow command img2dataset in sh scripts, does not run it
+
+4. pre-train stage2: 
+torchrun --nproc_per_node 2 train.py --cfg-path train_configs/minigpt4_7b_stage2_finetune.yaml
+
+Result: OutOfMemoryError!!! (2 rtx3090) too!!
+How to solve OOM:
+vi train_configs/minigpt4_7b_stage2_finetune.yaml
+	batch_size_train: 3  #orig is 12
+	batch_size_eval: 3   #orig is 12
+
+after about 7 mins, the 7b stage2 is pretrain finish, the folder is ./minigpt4/output/minigpt4_7b_stage2_finetune/20230521113/, 
+config the file eval_configs/minigpt4_7b_eval.yaml and use  it: (return to step demo)
+    ckpt: './minigpt4/output/minigpt4_7b_stage2_finetune/20230521113/checkpoint_4.pth'
+
+
